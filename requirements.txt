@@ -1,0 +1,9 @@
+redis==4.5.4
+influxdb-client
+python-json-logger==2.0.7
+numpy==1.24.3
+dash
+dash-core-components
+dash-html-components
+plotly
+pandas

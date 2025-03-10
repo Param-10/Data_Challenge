@@ -1,0 +1,19 @@
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the data generator script
+COPY data_generator.py .
+
+# Set environment variables with defaults
+ENV REDIS_HOST=redis
+ENV REDIS_PORT=6379
+ENV GENERATOR_INTERVAL=1.0
+
+# Run the data generator
+CMD ["python", "data_generator.py"]

@@ -1,0 +1,22 @@
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the worker script
+COPY workey.py .
+
+# Set environment variables with defaults
+ENV REDIS_HOST=redis
+ENV REDIS_PORT=6379
+ENV INFLUXDB_HOST=influxdb
+ENV INFLUXDB_TOKEN=adminpassword
+ENV INFLUXDB_ORG=myorg
+ENV INFLUXDB_BUCKET=color_data
+
+# Run the worker
+CMD ["python", "workey.py"]

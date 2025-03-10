@@ -1,0 +1,90 @@
+services:
+  generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.generator
+    volumes:
+      - ./data_generator.py:/app/data_generator.py
+      - ./requirements.txt:/app/requirements.txt
+    networks:
+      - app-network
+    depends_on:
+      - redis
+    command: python /app/data_generator.py
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    volumes:
+      - ./workey.py:/app/workey.py
+      - ./requirements.txt:/app/requirements.txt
+    depends_on:
+      - generator
+      - influxdb
+      - redis
+    networks:
+      - app-network
+    environment:
+      - REDIS_HOST=redis
+      - INFLUXDB_HOST=influxdb
+    command: python /app/workey.py
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    volumes:
+      - ./dashboard.py:/app/dashboard.py
+      - ./requirements.txt:/app/requirements.txt
+    ports:
+      - "8050:8050"
+    depends_on:
+      - worker
+    networks:
+      - app-network
+    command: python /app/dashboard.py
+
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    volumes:
+      - redis-data:/data
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=color_data
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
+  influxdb-storage:
+  redis-data:
