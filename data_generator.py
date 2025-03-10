@@ -5,6 +5,7 @@ import random
 import logging
 import redis
 from datetime import datetime
+import pytz
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 COLORS = ['red', 'blue', 'green', 'yellow']
 INTERVAL = float(os.getenv('GENERATOR_INTERVAL', 1.0))  # seconds between messages
 VALUE_RANGE = (1, 100)  # range of random values
+TIMEZONE = os.getenv('TIMEZONE', 'America/New_York')  # Set your local timezone
 
 class DataGenerator:
     def __init__(self):
@@ -27,8 +29,11 @@ class DataGenerator:
         color = random.choice(COLORS)
         value = random.randint(*VALUE_RANGE)
         
+        local_tz = pytz.timezone(TIMEZONE)
+        timestamp = datetime.now(local_tz).isoformat()  # Use local time with timezone
+        
         message = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': timestamp,
             'color': color,
             'value': value
         }

@@ -7,8 +7,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the worker script
-COPY workey.py .
+# Copy the worker script (renamed to worker.py)
+COPY worker.py .
 
 # Set environment variables with defaults
 ENV REDIS_HOST=redis
@@ -19,4 +19,4 @@ ENV INFLUXDB_ORG=myorg
 ENV INFLUXDB_BUCKET=color_data
 
 # Run the worker
-CMD ["python", "workey.py"]
+CMD ["python", "worker.py"]

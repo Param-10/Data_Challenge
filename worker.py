@@ -1,105 +1,111 @@
+import os
 import json
 import time
+import logging
 import redis
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+import numpy as np
 from datetime import datetime
-import statistics
 
-# InfluxDB configuration
-INFLUXDB_URL = "http://influxdb:8086"
-INFLUXDB_TOKEN = "your-influxdb-token"  # Change this to your actual token
-INFLUXDB_ORG = "my-org"
-INFLUXDB_BUCKET = "data-pipeline"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Time window for aggregation (in seconds)
-AGGREGATION_WINDOW = 10
+# Configuration
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+INFLUXDB_HOST = os.getenv('INFLUXDB_HOST', 'influxdb')
+INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN', 'adminpassword')
+INFLUXDB_ORG = os.getenv('INFLUXDB_ORG', 'myorg')
+INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET', 'color_data')
 
-class DataAggregator:
+class DataWorker:
     def __init__(self):
-        # Connect to Redis
-        self.redis_client = redis.Redis(host='redis', port=6379, db=0)
-        self.pubsub = self.redis_client.pubsub()
+        # Redis connection
+        self.redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
         
-        # Connect to InfluxDB
-        self.influx_client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
+        # InfluxDB connection
+        self.influx_client = InfluxDBClient(
+            url=f"http://{INFLUXDB_HOST}:8086", 
+            token=INFLUXDB_TOKEN, 
+            org=INFLUXDB_ORG
+        )
         self.write_api = self.influx_client.write_api(write_options=SYNCHRONOUS)
         
-        # Data storage for aggregation
-        self.data_by_color = {
-            "red": [],
-            "blue": [],
-            "green": [],
-            "yellow": []
-        }
-        
-        # Last aggregation time
-        self.last_aggregation_time = time.time()
-    
+        # Color aggregation tracking
+        self.color_data = {}
+        self.aggregation_window = 60  # 1-minute aggregation window
+
     def process_message(self, message):
-        """Process incoming messages from Redis."""
-        if message['type'] == 'message':
-            data = json.loads(message['data'])
-            print(f"Received: {data}")
+        try:
+            data = json.loads(message)
+            color = data.get('color')
+            value = data.get('value')
             
-            # Add value to corresponding color list
-            if data['color'] in self.data_by_color:
-                self.data_by_color[data['color']].append(data['value'])
-            
-            # Check if it's time to aggregate
-            current_time = time.time()
-            if current_time - self.last_aggregation_time >= AGGREGATION_WINDOW:
-                self.aggregate_and_store()
-                self.last_aggregation_time = current_time
-    
-    def aggregate_and_store(self):
-        """Aggregate data and store to InfluxDB."""
-        current_time = datetime.utcnow()
-        print(f"Aggregating data at {current_time}")
+            if color and value is not None:
+                current_time = datetime.utcnow()
+                
+                # Aggregate data for this color
+                if color not in self.color_data:
+                    self.color_data[color] = {
+                        'values': [],
+                        'last_aggregation': current_time
+                    }
+                
+                self.color_data[color]['values'].append(value)
+                
+                # Check if it's time to aggregate and write to InfluxDB
+                if (current_time - self.color_data[color]['last_aggregation']).total_seconds() >= self.aggregation_window:
+                    self.aggregate_and_write(color, current_time)
         
-        for color, values in self.data_by_color.items():
-            if values:
-                # Calculate aggregations
-                sum_value = sum(values)
-                avg_value = statistics.mean(values)
-                max_value = max(values)
-                min_value = min(values)
-                count = len(values)
-                
-                # Create InfluxDB point
-                point = Point("color_metrics") \
-                    .tag("color", color) \
-                    .field("sum", sum_value) \
-                    .field("avg", avg_value) \
-                    .field("max", max_value) \
-                    .field("min", min_value) \
-                    .field("count", count) \
-                    .time(current_time)
-                
-                # Write to InfluxDB
-                self.write_api.write(bucket=INFLUXDB_BUCKET, record=point)
-                
-                print(f"Stored aggregation for {color}: Count={count}, Avg={avg_value:.2f}, Sum={sum_value}")
-                
-                # Clear data for next window
-                self.data_by_color[color] = []
-    
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON message: {message}")
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+
+    def aggregate_and_write(self, color, current_time):
+        values = self.color_data[color]['values']
+        
+        # Calculate aggregates
+        point = Point("color_metrics") \
+            .tag("color", color) \
+            .field("count", len(values)) \
+            .field("mean", np.mean(values)) \
+            .field("median", np.median(values)) \
+            .field("min", np.min(values)) \
+            .field("max", np.max(values)) \
+            .time(current_time)
+        
+        # Write to InfluxDB
+        self.write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
+        
+        logger.info(f"Aggregated data for {color}: {point.to_line_protocol()}")
+        
+        # Reset color data
+        self.color_data[color] = {
+            'values': [],
+            'last_aggregation': current_time
+        }
+
     def run(self):
-        """Run the worker process."""
-        # Subscribe to Redis channel
-        self.pubsub.subscribe('data_channel')
-        
-        print("Worker started. Listening for messages...")
+        logger.info("Worker started. Listening for messages...")
         
         try:
-            for message in self.pubsub.listen():
-                self.process_message(message)
-        except KeyboardInterrupt:
-            print("Worker stopped.")
+            # Subscribe to the color_data channel
+            pubsub = self.redis_client.pubsub()
+            pubsub.subscribe('color_data')
+            
+            for message in pubsub.listen():
+                if message['type'] == 'message':
+                    self.process_message(message['data'])
+        
+        except Exception as e:
+            logger.error(f"Error in worker: {e}")
+        
         finally:
-            self.pubsub.unsubscribe()
             self.influx_client.close()
+            self.redis_client.close()
 
 if __name__ == "__main__":
-    aggregator = DataAggregator()
-    aggregator.run()
+    worker = DataWorker()
+    worker.run()

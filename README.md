@@ -1,73 +1,52 @@
-# Real-Time Color Data Processing Pipeline
+# Coding Challenge: Real-time Data Processing and Visualization
 
 ## Overview
-This project implements a real-time data processing pipeline that:
-- Generates random color-based numerical data
-- Processes and aggregates the data
-- Stores data in InfluxDB
-- Visualizes data in Grafana
+In this challenge, you will create a real-time data pipeline consisting of three components:
 
-## Components
-- **Data Generator**: Produces random messages with colors and values
-- **Worker**: Aggregates and stores data in InfluxDB
-- **Redis**: Message bus for data transmission
-- **InfluxDB**: Time-series database for storing aggregated metrics
-- **Grafana**: Visualization dashboard
+1. **Data Generator**: A script that generates random messages containing a color, name and a numerical value, then publishes them to a message bus.
+2. **Worker**: A script that subscribes to the message bus, processes the incoming messages, and stores aggregated numerical data into a time series database.
+3. **Visualization Dashboard**: A tool to visualize the aggregated data stored in the time series database.
 
-## Prerequisites
-- Docker
-- Docker Compose
+## Requirements
+- Use Python for scripting.
+- Use Kafka, Redis Pub/Sub, or RabbitMQ as the message bus.
+- Use InfluxDB, TimescaleDB, or Prometheus as the time series database.
+- Use Grafana, Plotly, or Matplotlib for visualization.
 
-## Setup and Running
+## Part 1: Data Generator
+Write a script that:
+- Generates random messages in the format:
+  ```json
+  {
+    "color": "red",
+    "value": 42
+  }
+  ```
+- Publishes these messages to a message bus at a regular interval (e.g., every second).
+- Uses a set of predefined colors (e.g., "red", "blue", "green", "yellow").
+- Generates numerical values within a random range (e.g., 1-100).
 
-### 1. Clone the Repository
-```bash
-git clone <your-repository-url>
-cd <repository-name>
-```
+## Part 2: Worker
+Write a script that:
+- Subscribes to the message bus.
+- Aggregates numerical values by color (e.g., sum, average) over a time window.
+- Stores the aggregated results into a time series database.
 
-### 2. Environment Configuration
-The project uses default configurations, but you can customize via environment variables in `docker-compose.yml`:
-- `GENERATOR_INTERVAL`: Time between data generation (default: 1 second)
-- Redis, InfluxDB, and Grafana have default credentials
+## Part 3: Visualization Dashboard
+- Use Grafana or another visualization tool to create a dashboard.
+- Connect it to the time series database and plot the aggregated numerical values over time.
+- Group data by color to visualize trends.
 
-### 3. Start the Pipeline
-```bash
-docker-compose up --build
-```
+## Bonus
+- Implement a streaming aggregation instead of storing raw values (e.g., calculate running averages).
+- Add real-time alerts when a color’s value exceeds a threshold.
+- Use Docker to containerize all components.
 
-### 4. Access Services
-- **Grafana**: http://localhost:3000
-  - Default Login: admin/adminpassword
-- **Dashboard**: http://localhost:8050
+## Submission Guidelines
+- Provide a GitHub repository with:
+  - `data_generator.py`
+  - `worker.py`
+  - Instructions to set up the message bus, time series database, and visualization tool.
+- Include a `README.md` with setup instructions.
 
-## Grafana Dashboard Configuration
-1. Log in to Grafana
-2. Add InfluxDB as a data source
-   - URL: http://influxdb:8086
-   - Organization: myorg
-   - Bucket: color_data
-   - Token: adminpassword
-
-### Recommended Grafana Panels
-1. **Time Series**: Color Values Over Time
-   - Measurement: color_metrics
-   - Group by: color
-   - Metrics: mean, median, min, max
-
-2. **Stat Panels**: Current Color Statistics
-   - Show latest mean and max values per color
-
-## Customization
-- Modify `data_generator.py` to change:
-  - Colors
-  - Value ranges
-  - Generation interval
-
-## Troubleshooting
-- Check Docker logs for each service
-- Ensure all services are running
-- Verify network connectivity
-
-## License
-[Your License Here]
+Happy coding!

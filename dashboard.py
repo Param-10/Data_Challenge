@@ -5,11 +5,12 @@ import pandas as pd
 import influxdb_client
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
+import time
 
 # InfluxDB Configuration
 bucket = "color_data"
 org = "myorg"
-token = "adminpassword"
+token = "h4TtaKhm5jxL4i0YjegFKSyZn0s0jgZakQ3TJB97FxiQIho_K1-Ae08oS4-BUpLd7hp4wAH0vULt3KUAA70T-w=="
 url = "http://influxdb:8086"
 
 # Create InfluxDB client
@@ -33,7 +34,6 @@ app.layout = html.Div([
     )
 ])
 
-# Callback to update the time series plot
 @app.callback(
     Output('time-series-plot', 'figure'),
     Input('interval-component', 'n_intervals')
@@ -41,24 +41,38 @@ app.layout = html.Div([
 def update_graph(n):
     # Query InfluxDB for color metrics
     query_api = client.query_api()
-    query = f'''
-    from(bucket:"{bucket}")
-        |> range(start: -1h)
-        |> filter(fn: (r) => r._measurement == "color_metrics")
-        |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+    query = '''
+    from(bucket: "color_data")
+      |> range(start: -1h)
+      |> filter(fn: (r) => r._measurement == "color_metrics")
+      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+      |> group(columns: ["color"])
     '''
     
-    result = query_api.query_data_frame(query)
+    result = query_api.query(org=org, query=query)
     
-    if result is not None and not result.empty:
-        # Create a time series plot
-        fig = px.line(result, x='_time', y=['red', 'green', 'blue'], 
-                      title='Color Metrics Over Time',
-                      labels={'_time': 'Time', 'value': 'Value'},
-                      color_discrete_map={'red': 'red', 'green': 'green', 'blue': 'blue'})
-        return fig
+    if result:
+        # Convert the result to a DataFrame
+        records = []
+        for table in result:
+            for record in table.records:
+                records.append(record.values)
+        
+        df = pd.DataFrame(records)
+        
+        if not df.empty:
+            # Convert _time to local timezone (America/New_York)
+            df['_time'] = pd.to_datetime(df['_time'], utc=True).dt.tz_convert('America/New_York')
+
+            # Create a time series plot
+            fig = px.line(df, x='_time', y=['mean', 'median', 'min', 'max'],
+                          title='Color Metrics Over Time',
+                          labels={'_time': 'Local Time (America/New_York)', 'value': 'Value'},
+                          color='color')
+            return fig
+        else:
+            return px.line(title='No Data Available')
     else:
-        # Return an empty figure if no data
         return px.line(title='No Data Available')
 
 # Run the app

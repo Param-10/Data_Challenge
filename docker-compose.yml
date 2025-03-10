@@ -17,7 +17,7 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     volumes:
-      - ./workey.py:/app/workey.py
+      - ./worker.py:/app/worker.py
       - ./requirements.txt:/app/requirements.txt
     depends_on:
       - generator
@@ -28,7 +28,8 @@ services:
     environment:
       - REDIS_HOST=redis
       - INFLUXDB_HOST=influxdb
-    command: python /app/workey.py
+      - INFLUXDB_TOKEN=h4TtaKhm5jxL4i0YjegFKSyZn0s0jgZakQ3TJB97FxiQIho_K1-Ae08oS4-BUpLd7hp4wAH0vULt3KUAA70T-w==
+    command: python /app/worker.py
 
   dashboard:
     build:
@@ -69,22 +70,10 @@ services:
     networks:
       - app-network
 
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"
-    networks:
-      - app-network
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    depends_on:
-      - influxdb
-
 networks:
   app-network:
     driver: bridge
 
 volumes:
-  grafana-storage:
   influxdb-storage:
   redis-data:
