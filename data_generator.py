@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
-COLORS = ['red', 'blue', 'green', 'yellow']
+COLORS = ['blue', 'green', 'red', 'yellow']
 INTERVAL = float(os.getenv('GENERATOR_INTERVAL', 1.0))  # seconds between messages
 VALUE_RANGE = (1, 100)  # range of random values
 TIMEZONE = os.getenv('TIMEZONE', 'America/New_York')  # Set your local timezone

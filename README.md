@@ -29,8 +29,9 @@ This project implements a real-time data pipeline as a submission for the "Real-
 - Generates numerical values within a random range: 1-100.
 
 ### 2. Worker (`worker.py`)
-- Subscribes to Redis Pub/Sub.
+- Subscribes to Redis Pub/Sub and implements streamlined aggression for data processing.
 - Aggregates numerical values by color, calculating mean, median, min, and max over a 5-second window.
+- Implements real-time alerts: when a color's value goes above 90, a log message is generated.
 - Stores the aggregated results in InfluxDB in the `color_data` bucket under the `color_metrics` measurement.
 
 ### 3. Visualization Dashboard (`dashboard.py`)

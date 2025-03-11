@@ -31,12 +31,14 @@ app.layout = html.Div([
         id='interval-component',
         interval=5*1000,  # in milliseconds
         n_intervals=0
-    )
+    ),
+    html.Div(id='alert-container')
 ])
 
 @app.callback(
-    Output('time-series-plot', 'figure'),
-    Input('interval-component', 'n_intervals')
+    [Output('time-series-plot', 'figure'),
+     Output('alert-container', 'children')],
+    [Input('interval-component', 'n_intervals')]
 )
 def update_graph(n):
     # Query InfluxDB for color metrics
@@ -45,6 +47,7 @@ def update_graph(n):
     from(bucket: "color_data")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "color_metrics")
+      |> aggregateWindow(every: 5m, fn: mean)
       |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
       |> group(columns: ["color"])
     '''
@@ -64,16 +67,28 @@ def update_graph(n):
             # Convert _time to local timezone (America/New_York)
             df['_time'] = pd.to_datetime(df['_time'], utc=True).dt.tz_convert('America/New_York')
 
-            # Create a time series plot
-            fig = px.line(df, x='_time', y=['mean', 'median', 'min', 'max'],
-                          title='Color Metrics Over Time',
-                          labels={'_time': 'Local Time (America/New_York)', 'value': 'Value'},
-                          color='color')
-            return fig
+            # Create a time series plot for running average
+            # Create a time series plot for running average
+            fig = px.line(df, x='_time', y='mean', color='color',
+                          title='Running Average of Color Metrics Over Time (5 min window)',
+                          labels={'_time': 'Local Time (America/New_York)', 'mean': 'Running Average Value'},
+                          color_discrete_map={'green': 'green', 'red': 'red', 'yellow': 'yellow'})
+
+            # Check for alerts and print to terminal
+            threshold = 90
+            alerts = []
+            for index, row in df.iterrows():
+                if row['mean'] > threshold:
+                    alert_message = f"Alert: {row['color']} value ({row['mean']:.2f}) exceeds threshold ({threshold}) at {row['_time'].strftime('%Y-%m-%d %H:%M:%S')}"
+                    alerts.append(alert_message)
+                    print(alert_message)  # Print alert to terminal
+
+            alert_divs = [html.Div(alert, style={'color': 'red'}) for alert in alerts]
+            return fig, alert_divs
         else:
-            return px.line(title='No Data Available')
+            return px.line(title='No Data Available'), []
     else:
-        return px.line(title='No Data Available')
+        return px.line(title='No Data Available'), []
 
 # Run the app
 if __name__ == '__main__':

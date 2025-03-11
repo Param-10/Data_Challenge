@@ -45,6 +45,10 @@ class DataWorker:
             if color and value is not None:
                 current_time = datetime.utcnow()
                 
+                # Real-time alert
+                if value > 90:
+                    logger.warning(f"Real-time Alert: {color} value is above 90 ({value})!")
+                
                 # Aggregate data for this color
                 if color not in self.color_data:
                     self.color_data[color] = {
