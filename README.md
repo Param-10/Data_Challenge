@@ -48,10 +48,10 @@ This project implements a real-time data pipeline as a submission for the "Real-
 
 ### 1. Clone the Repository
 ```bash
-git clone <your-repository-url>
-cd <repository-name>
+git clone https://github.com/Param-10/Data_Challenge.git
+cd Data_Challenge
 ```
-Replace `<your-repository-url>` and `<repository-name>` with the actual repository URL and name.
+
 
 ### 2. Start the Pipeline with Docker Compose
 Navigate to the repository directory in your terminal. To start the pipeline, you can use either `docker-compose` or `docker compose`.
@@ -121,4 +121,3 @@ Wait for all services to start. You can check the logs in your terminal to monit
   - `Dockerfile.dashboard`
   - `.gitignore`
 
-Happy coding!
