@@ -1,3 +1,4 @@
+# Description: Dockerfile for the generator service
 FROM python:3.9-slim
 
 # Set working directory

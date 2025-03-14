@@ -47,7 +47,7 @@ def update_graph(n):
     from(bucket: "color_data")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "color_metrics")
-      |> aggregateWindow(every: 5m, fn: mean)
+      |> aggregateWindow(every: 1m, fn: mean)
       |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
       |> group(columns: ["color"])
     '''
@@ -70,9 +70,9 @@ def update_graph(n):
             # Create a time series plot for running average
             # Create a time series plot for running average
             fig = px.line(df, x='_time', y='mean', color='color',
-                          title='Running Average of Color Metrics Over Time (5 min window)',
+                          title='Running Average of Color Metrics Over Time (1m window)',
                           labels={'_time': 'Local Time (America/New_York)', 'mean': 'Running Average Value'},
-                          color_discrete_map={'green': 'green', 'red': 'red', 'yellow': 'yellow'})
+                          color_discrete_map={'blue': 'blue', 'green': 'green', 'red': 'red', 'yellow': 'yellow'})
 
             # Check for alerts and print to terminal
             threshold = 90

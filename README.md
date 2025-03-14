@@ -46,6 +46,27 @@ This project implements a real-time data pipeline as a submission for the "Real-
 - Docker: Ensure Docker is installed on your system.
 - Docker Compose: Ensure Docker Compose is installed. You might need to install it separately depending on your Docker installation.
 
+### 1a. Set up a Python Virtual Environment (Recommended)
+It is highly recommended to create a virtual environment for this project to manage dependencies.
+
+```bash
+# Create a virtual environment
+python3 -m venv venv
+
+# Activate the virtual environment
+# On macOS and Linux:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+```
+
+### 1b. Install Python Dependencies
+After activating the virtual environment, install the required Python packages using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
 ### 1. Clone the Repository
 ```bash
 git clone <your-repository-url>

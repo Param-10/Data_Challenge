@@ -1,3 +1,4 @@
+# Description: Dockerfile for the worker service
 FROM python:3.9-slim
 
 # Set working directory
@@ -7,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the worker script (renamed to worker.py)
+# Copy the worker script
 COPY worker.py .
 
 # Set environment variables with defaults

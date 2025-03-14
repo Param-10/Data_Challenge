@@ -1,1 +1,3 @@
 venv/
+#ignores the venv folder as it is not required to be pushed to the repository
+#please use the commands given in the readme file to create the venv folder
