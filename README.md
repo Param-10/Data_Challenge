@@ -119,7 +119,7 @@ Wait for all services to start. You can check the logs in your terminal to monit
 ### Customization
 - **Data Generation Interval**: Modify `GENERATOR_INTERVAL` environment variable in `docker-compose.yml` (default: 1 second).
 - **InfluxDB Aggregation Window**: Adjust the time window in `worker.py` (currently 5 seconds).
-- **Dashboard Update Interval**: Change `interval` in `dcc.Interval` in `dashboard.py` (currently 5 seconds).
+- **Dashboard Update Interval**: Change `interval` in `dcc.Interval` in `dashboard.py` (currently 1 minute).
 
 ### Troubleshooting
 - **Check Docker Logs**: Use `docker-compose logs <service_name>` or `docker compose logs <service_name>` to check logs for each service (e.g., `docker-compose logs dashboard`).
